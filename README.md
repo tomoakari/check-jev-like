@@ -60,6 +60,16 @@ npm run deploy
 
 表示された `https://check-jev-like.<あなたのサブドメイン>.workers.dev` を開けば完成です。
 
+### ブランチごとのプレビュー（Workers Builds を使う場合）
+
+GitHub 連携の Workers Builds では、main 以外のブランチに push すると `npx wrangler preview` でプレビューが作られます。
+プレビューは本番の設定を引き継がないので、`wrangler.jsonc` の `previews` ブロックに同じ変数とレート制限を書いてあります。
+API キーだけは設定ファイルに書けないので、最初に一度だけプレビュー用にも登録してください。
+
+```bash
+npx wrangler preview base-config secret put OPENROUTER_API_KEY
+```
+
 > 💡 だれでも開けるURLになり、実行するたびにあなたの OpenRouter クレジットが使われます。
 > 判断AIは1回あたり約0.02円未満とかなり安いですが、気になる場合は OpenRouter 側でキーに利用上限を設定するか、
 > [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) でページに認証をかけてください。
