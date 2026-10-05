@@ -31,6 +31,8 @@ const app = {
   defaults: [],
   selected: new Set(),
   running: false,
+  // 1ドルあたりの円。/api/rate で最新値に置きかわる
+  rate: { rate: 157, date: null, source: "fixed" },
 };
 
 /** API 形式の質問 → 編集用の形 */
@@ -222,7 +224,7 @@ const shortName = (m) => (m.name.includes(":") ? m.name.split(":").slice(1).join
 function priceLabel(m) {
   if (m.inputPricePerMillion == null) return "料金不明";
   if (m.inputPricePerMillion === 0) return "無料";
-  return `$${+m.inputPricePerMillion.toPrecision(3)} / 100万トークン`;
+  return `${yen(m.inputPricePerMillion)} / 100万トークン`;
 }
 
 function modelCard(m) {
@@ -264,6 +266,17 @@ function renderModels() {
   box.hidden = !featured.length || !others.length;
   $("#moreModels").replaceChildren(...others.map(modelCard));
   box.querySelector("summary").textContent = `ほかの判断AIも見る（${others.length}個）`;
+}
+
+async function loadRate() {
+  try {
+    const body = await (await fetch("/api/rate")).json();
+    if (body.ok && body.rate > 0) app.rate = { rate: body.rate, date: body.date, source: body.source };
+  } catch {
+    // 取得できなければ初期値（固定レート）のまま
+  }
+  $("#rateNote").textContent = rateNote();
+  if (app.models.length) renderModels();
 }
 
 async function loadModels() {
@@ -341,10 +354,20 @@ async function run() {
 
 const pct = (p) => (p > 0 && p < 0.005 ? "<1%" : `${Math.round(p * 100)}%`);
 
-function money(usd) {
+/** ドル建ての金額を円で表示する。1円未満はとても小さいので有効数字2桁で見せる */
+function yen(usd) {
   if (usd == null) return "—";
-  if (usd === 0) return "$0（無料）";
-  return `$${+usd.toPrecision(2)}`;
+  if (usd === 0) return "0円（無料）";
+  const v = usd * app.rate.rate;
+  const opts = v < 1 ? { maximumSignificantDigits: 2 } : v < 100 ? { maximumFractionDigits: 1 } : { maximumFractionDigits: 0 };
+  return `約${v.toLocaleString("ja-JP", opts)}円`;
+}
+
+function rateNote() {
+  const { rate, date, source } = app.rate;
+  return source === "ecb"
+    ? `※ 料金はドル建てです。1ドル＝${rate}円（${date} 時点の欧州中央銀行の参考レート）で円に換算しています。`
+    : `※ 料金はドル建てです。1ドル＝${rate}円（固定レート）で円に換算しています。`;
 }
 
 function bar(label, p, { winner = false } = {}) {
@@ -408,6 +431,10 @@ function answerCell(q, a) {
 }
 
 function renderSummary(run) {
+  return [renderSummaryCards(run), h("p", { class: "meta rate-note" }, rateNote())];
+}
+
+function renderSummaryCards(run) {
   const ok = run.models.filter((m) => run.results[m.id].status === "ok");
   const allDone = run.models.every((m) => run.results[m.id].status !== "loading");
   const fastest = allDone && ok.length > 1 ? ok.reduce((a, b) => (run.results[a.id].latencyMs <= run.results[b.id].latencyMs ? a : b)).id : null;
@@ -434,8 +461,8 @@ function renderSummary(run) {
         r.status === "ok" &&
           h("dl", { class: "stats" },
             h("dt", {}, "⏱ 応答時間"), h("dd", {}, `${(r.latencyMs / 1000).toFixed(2)} 秒`),
-            h("dt", {}, "💰 今回の費用"), h("dd", {}, money(usage?.cost)),
-            h("dt", {}, "🔁 1万回なら"), h("dd", {}, usage?.cost != null ? money(usage.cost * 10000) : "—"),
+            h("dt", {}, "💰 今回の費用"), h("dd", {}, yen(usage?.cost)),
+            h("dt", {}, "🔁 1万回なら"), h("dd", {}, usage?.cost != null ? yen(usage.cost * 10000) : "—"),
             h("dt", {}, "📖 読んだ量"), h("dd", {}, usage ? `${usage.input_tokens.toLocaleString()} トークン` : "—"),
           ),
       );
@@ -491,7 +518,7 @@ function renderRaw(run) {
 }
 
 function renderResults(run) {
-  $("#summary").replaceChildren(renderSummary(run));
+  $("#summary").replaceChildren(...renderSummary(run));
   $("#answers").replaceChildren(...renderAnswers(run), renderRaw(run));
 }
 
@@ -508,3 +535,4 @@ $("#run").addEventListener("click", run);
 
 applyPreset(PRESETS[0]);
 loadModels();
+loadRate();

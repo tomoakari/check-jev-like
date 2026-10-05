@@ -24,11 +24,15 @@ OpenRouter の [Decisions API](https://openrouter.ai/docs/guides/community/jev)�
 ブラウザ (public/)                    Cloudflare Worker (src/)                 OpenRouter
  ├ index.html / style.css            ├ index.ts      … ルーティング
  ├ app.js   … 画面の動き   ──fetch──▶ ├ validate.ts   … 入力チェック   ──────▶  /api/v1/models
- └ presets.js … お題サンプル          └ openrouter.ts … API 呼び出し   ──────▶  /api/alpha/decisions
+ └ presets.js … お題サンプル          ├ openrouter.ts … API 呼び出し   ──────▶  /api/alpha/decisions
+                                      └ rate.ts       … ドル円レート   ──────▶  Frankfurter
 ```
 
 - `GET /api/models` … 比較できる判断AIの一覧（10分キャッシュ）
 - `POST /api/decide` … 1つのモデルに判断させる。ブラウザはモデルごとに並列で呼ぶので、速いモデルから順に結果が出ます
+- `GET /api/rate` … ドル円レート。料金はドル建てなので、画面では円に換算して表示します。
+  レートは [Frankfurter](https://frankfurter.dev/)（欧州中央銀行の参考レート、APIキー不要）から取得し、6時間キャッシュします。
+  取得できないときは `FALLBACK_USD_JPY`（既定 157円）を使います
 - API キーは Worker の secret にだけ置き、ブラウザには出しません
 - 公開ページなので、入力サイズの制限・モデルの許可リスト・IP ごとのレート制限（1分30回）をかけています
 
@@ -56,8 +60,18 @@ npm run deploy
 
 表示された `https://check-jev-like.<あなたのサブドメイン>.workers.dev` を開けば完成です。
 
+### ブランチごとのプレビュー（Workers Builds を使う場合）
+
+GitHub 連携の Workers Builds では、main 以外のブランチに push すると `npx wrangler preview` でプレビューが作られます。
+プレビューは本番の設定を引き継がないので、`wrangler.jsonc` の `previews` ブロックに同じ変数とレート制限を書いてあります。
+API キーだけは設定ファイルに書けないので、最初に一度だけプレビュー用にも登録してください。
+
+```bash
+npx wrangler preview base-config secret put OPENROUTER_API_KEY
+```
+
 > 💡 だれでも開けるURLになり、実行するたびにあなたの OpenRouter クレジットが使われます。
-> 判断AIは1回あたり $0.0001 未満とかなり安いですが、気になる場合は OpenRouter 側でキーに利用上限を設定するか、
+> 判断AIは1回あたり約0.02円未満とかなり安いですが、気になる場合は OpenRouter 側でキーに利用上限を設定するか、
 > [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/) でページに認証をかけてください。
 
 ## 開発用コマンド
@@ -65,7 +79,7 @@ npm run deploy
 | コマンド | 内容 |
 | - | - |
 | `npm run dev` | ローカルサーバー起動 |
-| `npm test` | 入力チェックのユニットテスト |
+| `npm test` | ユニットテスト（入力チェック・為替レート） |
 | `npm run typecheck` | 型チェック |
 | `npm run types` | `wrangler.jsonc` を変えたあとに型定義を再生成 |
 | `npm run deploy` | Cloudflare にデプロイ |
@@ -76,3 +90,4 @@ npm run deploy
 - **モデルの日本語紹介** … `public/presets.js` の `MODEL_NOTES`
 - **最初に選ばれるモデル** … `wrangler.jsonc` の `DEFAULT_MODELS`
 - **レート制限** … `wrangler.jsonc` の `ratelimits`
+- **為替レートの予備値** … `wrangler.jsonc` の `FALLBACK_USD_JPY`

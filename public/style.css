@@ -337,3 +337,6 @@ textarea:focus, input[type="text"]:focus, .btn:focus-visible, .preset:focus-visi
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+.rate-note { margin: 12px 0 0; }
+#summary .rate-note { margin: -8px 0 20px; }

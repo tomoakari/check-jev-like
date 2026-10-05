@@ -23,8 +23,28 @@
 
   "vars": {
     // 最初からチェックが入っているモデル（カンマ区切り）
-    "DEFAULT_MODELS": "typesafe/jev-1.13,cloudflare/clef,cloudflare/clef-flash"
-  }
+    "DEFAULT_MODELS": "typesafe/jev-1.13,cloudflare/clef,cloudflare/clef-flash",
+    // 為替レートが取得できなかったときに使う 1ドルあたりの円
+    "FALLBACK_USD_JPY": "157"
+  },
 
   // OPENROUTER_API_KEY は secret で設定する: npx wrangler secret put OPENROUTER_API_KEY
+
+  // ブランチごとのプレビュー（npx wrangler preview / Workers Builds のブランチビルド）用の設定。
+  // プレビューは上の vars やバインディングを引き継がないので、同じものをここにも書く。
+  // API キーは: npx wrangler preview base-config secret put OPENROUTER_API_KEY
+  "previews": {
+    "vars": {
+      "DEFAULT_MODELS": "typesafe/jev-1.13,cloudflare/clef,cloudflare/clef-flash",
+      "FALLBACK_USD_JPY": "157"
+    },
+    "ratelimits": [
+      {
+        "name": "RATE_LIMITER",
+        // 本番（1001）とカウントを分ける
+        "namespace_id": "1002",
+        "simple": { "limit": 30, "period": 60 }
+      }
+    ]
+  }
 }
