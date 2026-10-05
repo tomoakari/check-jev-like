@@ -1,9 +1,11 @@
 // ルーティングだけを担当する入口。
 //   GET  /api/models  … 比べられるモデルの一覧
 //   POST /api/decide  … 1つのモデルに判断させる（ブラウザはモデルごとに並列で呼ぶ）
+//   GET  /api/rate    … 費用を円で見せるためのドル円レート
 // それ以外は public/ の静的ファイルが返る。
 
 import { decide, listDecisionModels } from "./openrouter";
+import { getUsdJpy } from "./rate";
 import { parseDecideInput } from "./validate";
 
 const MAX_BODY_CHARS = 64 * 1024;
@@ -27,6 +29,11 @@ async function handleModels(env: Env): Promise<Response> {
   } catch {
     return error("モデル一覧を取得できませんでした。少し時間をおいて再読み込みしてください。", 502);
   }
+}
+
+async function handleRate(env: Env): Promise<Response> {
+  const fallback = Number(env.FALLBACK_USD_JPY);
+  return json({ ok: true, ...(await getUsdJpy(Number.isFinite(fallback) && fallback > 0 ? fallback : 157)) });
 }
 
 async function isAllowedModel(env: Env, model: string): Promise<boolean> {
@@ -72,6 +79,7 @@ export default {
 
     if (pathname === "/api/models" && request.method === "GET") return handleModels(env);
     if (pathname === "/api/decide" && request.method === "POST") return handleDecide(request, env);
+    if (pathname === "/api/rate" && request.method === "GET") return handleRate(env);
     if (pathname.startsWith("/api/")) return error("見つかりません。", 404);
 
     return env.ASSETS.fetch(request);

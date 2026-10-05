@@ -23,7 +23,9 @@
 
   "vars": {
     // 最初からチェックが入っているモデル（カンマ区切り）
-    "DEFAULT_MODELS": "typesafe/jev-1.13,cloudflare/clef,cloudflare/clef-flash"
+    "DEFAULT_MODELS": "typesafe/jev-1.13,cloudflare/clef,cloudflare/clef-flash",
+    // 為替レートが取得できなかったときに使う 1ドルあたりの円
+    "FALLBACK_USD_JPY": "157"
   }
 
   // OPENROUTER_API_KEY は secret で設定する: npx wrangler secret put OPENROUTER_API_KEY
