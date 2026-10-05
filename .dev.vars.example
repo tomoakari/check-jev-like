@@ -1,0 +1,3 @@
+# このファイルを .dev.vars にコピーして、自分の OpenRouter API キーを入れてね
+# 取得先: https://openrouter.ai/settings/keys
+OPENROUTER_API_KEY=sk-or-xxxxxxxxxxxxxxxx
