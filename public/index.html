@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>判断AIくらべ</title>
+  <meta name="description" content="Jev や Clef などの「判断AI」に同じ質問をして、答えと自信の度合いを並べて比べられるサンプルページです。">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <p class="eyebrow">OpenRouter で使える判断AIの比較サンプル</p>
+      <h1>判断AIくらべ <span class="hero-icon" aria-hidden="true">⚖️</span></h1>
+      <p class="lead">
+        おなじ文章と質問を、<strong>Jev（ジェヴ）</strong>や<strong>Clef（クレフ）</strong>などの「判断AI」にまとめて送り、
+        <br class="pc">それぞれの<strong>答え・自信の度合い・速さ・費用</strong>を並べて比べられます。
+      </p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- はじめに -->
+    <details class="card intro" open>
+      <summary><span class="intro-title">💡 はじめに：「判断AI」ってなに？</span><span class="toggle-hint">クリックで開閉</span></summary>
+      <div class="intro-body">
+        <p>
+          ChatGPT のような AI は、質問に<strong>文章で</strong>答えます。
+          いっぽう「判断AI」は、こちらが用意した<strong>選択肢の中から選び、どれくらい自信があるかを数字（確率）で</strong>返します。
+          文章は書かないかわりに、<strong>とても速くて安い</strong>のが特長です。
+        </p>
+        <div class="compare">
+          <div class="compare-col">
+            <h3>💬 ふつうのチャットAI</h3>
+            <p class="bubble q">この問い合わせは不具合の報告？</p>
+            <p class="bubble a">はい、内容から判断すると支払いボタンを押した後に画面が真っ白になるという現象のため、不具合の可能性が高いと考えられます……</p>
+            <p class="note">→ 読めばわかるけど、プログラムで扱いにくい</p>
+          </div>
+          <div class="compare-col">
+            <h3>⚖️ 判断AI（Jev・Clef など）</h3>
+            <p class="bubble q">この問い合わせは不具合の報告？</p>
+            <div class="bubble a">
+              <div class="mini-bar"><span>はい</span><i style="--p:96%"></i><b>96%</b></div>
+            </div>
+            <p class="note">→ 一瞬で、数字ではっきり答える</p>
+          </div>
+        </div>
+        <p>判断AIにできる質問は、次の<strong>3種類</strong>です。</p>
+        <ul class="type-list">
+          <li><span class="type-badge t-noul">はい／いいえ</span> 「〜ですか？」に答え、<em>「はい」の確率</em>を返します。</li>
+          <li><span class="type-badge t-choice">選択</span> いくつかの選択肢から1つ選び、<em>それぞれの確率</em>を返します。</li>
+          <li><span class="type-badge t-score">段階評価</span> 「低い〜高い」のような段階のどこにあたるかを返します。</li>
+        </ul>
+        <p class="tips">使いみちの例：問い合わせの振り分け、口コミの良し悪しの判定、迷惑メールの検出、AIエージェントの行動チェック など。</p>
+      </div>
+    </details>
+
+    <!-- STEP 1 -->
+    <section class="card step" aria-labelledby="s1">
+      <h2 id="s1"><span class="num">1</span>お題をえらぶ</h2>
+      <p class="help">まずはサンプルを選んでみてください。文章と質問が自動で入ります。もちろん、あとから自由に書きかえてOKです。</p>
+      <div id="presets" class="presets" role="radiogroup" aria-label="お題"></div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="card step" aria-labelledby="s2">
+      <h2 id="s2"><span class="num">2</span>判定したい文章を入れる</h2>
+      <p class="help">AIに読ませたい文章です。お客さまからのメール、口コミ、チャットのやりとりなど、なんでもOK。</p>
+      <textarea id="state" rows="6" placeholder="例）決済ボタンを押すと画面が真っ白になります。ブラウザを2つ試しましたがダメでした。"></textarea>
+      <div class="counter"><span id="stateCount">0</span> / <span id="stateMax">6000</span> 文字</div>
+      <p class="warn">⚠️ 入力した文章は OpenRouter を通じて各AIの提供会社に送られます。個人情報や社外秘の情報は入れないでください。</p>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="card step" aria-labelledby="s3">
+      <h2 id="s3"><span class="num">3</span>AIへの質問をつくる</h2>
+      <p class="help">
+        判断AIには「何を判断してほしいか」を質問の形で伝えます。1回で最大5つまで同時に聞けます。
+        <strong>選択肢や基準の説明をていねいに書くほど、判断が正確になります。</strong>
+      </p>
+      <div id="questions"></div>
+      <button type="button" id="addQuestion" class="btn ghost">＋ 質問をふやす</button>
+    </section>
+
+    <!-- STEP 4 -->
+    <section class="card step" aria-labelledby="s4">
+      <h2 id="s4"><span class="num">4</span>比べるAIをえらぶ</h2>
+      <p class="help">チェックを入れたAIすべてに、同じ文章・同じ質問を送ります（最大<span id="maxModels">6</span>つ）。</p>
+      <div id="models" class="models"><p class="loading-text">AIの一覧を読み込み中…</p></div>
+      <details id="moreModelsBox" class="more-models" hidden>
+        <summary>ほかの判断AIも見る</summary>
+        <div id="moreModels" class="models"></div>
+      </details>
+    </section>
+
+    <div class="run-area">
+      <button type="button" id="run" class="btn primary big">⚖️ 比べてみる！</button>
+      <p id="runHint" class="run-hint" role="status"></p>
+    </div>
+
+    <!-- 結果 -->
+    <section id="results" class="results" hidden aria-live="polite">
+      <h2 class="results-title">📊 結果</h2>
+      <div id="summary"></div>
+      <div id="answers"></div>
+    </section>
+
+    <!-- 見方ガイド -->
+    <details class="card guide">
+      <summary><span class="intro-title">📖 結果の見方ガイド（用語集）</span><span class="toggle-hint">クリックで開閉</span></summary>
+      <dl>
+        <dt>確率（%）</dt>
+        <dd>AIが「この答えだと思う」度合いです。「はい 96%」なら、かなり自信をもって「はい」と考えています。50%前後は「どちらとも言えない」という意味です。</dd>
+        <dt>信頼度</dt>
+        <dd>選択や段階評価で、確率が1つの答えにどれだけ集中しているかを表します。高いほど迷いが少ない状態です。</dd>
+        <dt>スコア</dt>
+        <dd>段階評価で、確率をふまえた「平均的な位置」です。いちばん左の段階が 0 で、右に行くほど数字が大きくなります。</dd>
+        <dt>意見の一致</dt>
+        <dd>選んだAIたちが同じ答えを出したかどうか。分かれた質問は、AIにとっても判断が難しい（＝質問や基準の書き方を工夫する余地がある）ことが多いです。</dd>
+        <dt>応答時間</dt>
+        <dd>質問を送ってから答えが返ってくるまでの時間です。ネットワークの状況でも変わります。</dd>
+        <dt>費用・トークン</dt>
+        <dd>AIは文章を「トークン」という小さな単位に区切って読みます（日本語ならだいたい1文字＝1トークン前後）。判断AIは<strong>読んだ量（入力トークン）だけ</strong>に料金がかかります。</dd>
+        <dt>品質を比べるコツ</dt>
+        <dd>正解がはっきりしている文章（例：明らかな迷惑メール）と、人間でも迷う文章の両方で試すと、AIごとの得意・不得意が見えてきます。</dd>
+      </dl>
+    </details>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <p>
+        このページは <a href="https://openrouter.ai/" target="_blank" rel="noopener">OpenRouter</a> の
+        <a href="https://openrouter.ai/docs/guides/community/jev" target="_blank" rel="noopener">Decisions API</a> を使ったサンプルです。
+        結果は毎回少しずつ変わることがあります。
+      </p>
+    </div>
+  </footer>
+
+  <template id="tpl-question">
+    <div class="question">
+      <div class="q-head">
+        <span class="q-label"></span>
+        <button type="button" class="btn icon remove" aria-label="この質問を削除">✕</button>
+      </div>
+      <div class="q-types" role="radiogroup" aria-label="質問の種類">
+        <button type="button" data-type="noul"><b>はい／いいえ</b><small>〜ですか？</small></button>
+        <button type="button" data-type="choice"><b>選択</b><small>どれにあたる？</small></button>
+        <button type="button" data-type="score"><b>段階評価</b><small>どのくらい？</small></button>
+      </div>
+      <label class="field">
+        <span>質問文</span>
+        <input type="text" class="q-text" maxlength="500" placeholder="例）これは不具合の報告ですか？">
+      </label>
+      <div class="q-criteria"></div>
+    </div>
+  </template>
+</body>
+</html>

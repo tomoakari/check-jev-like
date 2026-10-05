@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "check-jev-like",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "observability": { "enabled": true },
+
+  // public/ の HTML/CSS/JS をそのまま配信。/api/* だけ Worker が処理する
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+
+  // API キーを持つ公開ページなので、IP ごとに呼び出し回数を制限する（1分あたり30回）
+  "ratelimits": [
+    {
+      "name": "RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 30, "period": 60 }
+    }
+  ],
+
+  "vars": {
+    // 最初からチェックが入っているモデル（カンマ区切り）
+    "DEFAULT_MODELS": "typesafe/jev-1.13,cloudflare/clef,cloudflare/clef-flash"
+  }
+
+  // OPENROUTER_API_KEY は secret で設定する: npx wrangler secret put OPENROUTER_API_KEY
+}
